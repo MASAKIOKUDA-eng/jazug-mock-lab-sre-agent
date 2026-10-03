@@ -33,7 +33,7 @@
       return d;
     }
 
-    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + opts.title + 'の推移">';
+    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" focusable="false" aria-label="' + opts.title + "の推移のグラフ。" + (opts.summary || "") + '">';
 
     // 横の目盛り線
     for (var g = 0; g <= 4; g++) {
@@ -78,10 +78,23 @@
 
     svg += "</svg>";
 
+    // グラフと同じ数値を表でも読めるようにする（スクリーンリーダーや色の見分けにくい人向け）
+    var rows = "";
+    opts.labels.forEach(function (lb, i) {
+      var v = opts.values && opts.values[i] != null ? opts.values[i] : null;
+      var f = opts.future && opts.future[i] != null ? opts.future[i] : null;
+      if (v == null && f == null) return;
+      rows += "<tr><th scope=\"row\">" + lb + "</th><td class=\"num\">" + (v != null ? v : f) + "</td><td>" + (v == null ? "見込み" : "実測") + "</td></tr>";
+    });
+    var table =
+      '<details class="data-alt"><summary>' + opts.title + 'の数値を表で見る</summary><div class="table-wrap"><table class="mini-table">' +
+      "<caption class=\"sr-only\">" + opts.title + "（単位: " + opts.unit + "）</caption>" +
+      "<thead><tr><th scope=\"col\">時刻</th><th scope=\"col\" style=\"text-align:right\">値（" + opts.unit + "）</th><th scope=\"col\">種類</th></tr></thead><tbody>" + rows + "</tbody></table></div></details>";
+
     return (
       '<figure class="chart">' +
       '<figcaption class="chart__title"><span>' + opts.title + "</span><span>単位: " + opts.unit + "</span></figcaption>" +
-      svg +
+      svg + table +
       "</figure>"
     );
   }

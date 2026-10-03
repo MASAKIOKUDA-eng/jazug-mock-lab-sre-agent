@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
   <header class="site-header">
     <div class="site-header__inner">
       <a class="brand" href="#/">
@@ -29,15 +30,17 @@
     <main class="main" id="main" tabindex="-1"></main>
   </div>
 
-  <div class="term-pop" id="term-pop" role="dialog" aria-modal="false" hidden></div>
+  <div class="term-pop" id="term-pop" role="dialog" aria-modal="false" aria-labelledby="term-pop-title" tabindex="-1" hidden></div>
+  <div class="sr-only" id="announcer" role="status" aria-live="polite"></div>
 
   <footer class="site-footer">
     <p>このラボは学習用の模擬環境です。画面・データはすべて架空のもので、実際の Azure ポータルとは異なります。</p>
-    <p>仕様の説明は Microsoft Learn「Azure SRE Agent」ドキュメント（2026年8月時点）をもとにしています。最新情報は<a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/overview" target="_blank" rel="noopener">公式ドキュメント</a>で確認してください。</p>
+    <p>仕様の説明は Microsoft Learn「Azure SRE Agent」ドキュメント（2026年8月時点）をもとにしています。最新情報は<a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/overview" target="_blank" rel="noopener">公式ドキュメント<span class="sr-only">（新しいタブで開きます）</span></a>で確認してください。</p>
   </footer>
 
   <script src="js/core.js"></script>
   <script src="js/chart.js"></script>
+  <script src="js/arch.js"></script>
   <script src="js/glossary.js"></script>
   <script src="js/pages/home.js"></script>
   <script src="js/pages/lab1.js"></script>

@@ -66,24 +66,31 @@
 
   Lab.TERMS = TERMS;
 
-  /* ---- ポップアップ ---- */
+  /* ---- ポップアップ ----
+   * 言葉（ボタン）を押すと説明を開き、フォーカスを説明に移します。
+   * Esc・「閉じる」・外側のクリックで閉じ、フォーカスは元の言葉に戻します。
+   */
   var pop, currentBtn;
 
-  function closePop() {
-    if (!pop) return;
+  function closePop(returnFocus) {
+    if (!pop || pop.hidden) return;
     pop.hidden = true;
-    if (currentBtn) currentBtn.setAttribute("aria-expanded", "false");
+    var btn = currentBtn;
     currentBtn = null;
+    if (btn) {
+      btn.setAttribute("aria-expanded", "false");
+      if (returnFocus && btn.isConnected) btn.focus();
+    }
   }
 
   function openPop(btn) {
     var t = TERMS[btn.getAttribute("data-term")];
     if (!t) return;
     pop = pop || document.getElementById("term-pop");
-    if (currentBtn === btn) { closePop(); return; }
-    closePop();
-    pop.innerHTML = "<strong>" + t.name + "</strong>" + t.text +
-      '<div style="margin-top:6px"><a href="#/glossary">用語集をすべて見る</a></div>';
+    if (currentBtn === btn) { closePop(true); return; }
+    closePop(false);
+    pop.innerHTML = '<strong id="term-pop-title">' + t.name + "</strong><p style=\"margin:0\">" + t.text + "</p>" +
+      '<div style="margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button type="button" class="btn btn--small" data-pop-close>閉じる</button><a href="#/glossary">用語集をすべて見る</a></div>';
     pop.hidden = false;
     var r = btn.getBoundingClientRect();
     var left = r.left + window.scrollX;
@@ -92,24 +99,33 @@
     pop.style.top = r.bottom + window.scrollY + 6 + "px";
     btn.setAttribute("aria-expanded", "true");
     currentBtn = btn;
+    pop.focus();
   }
 
   document.addEventListener("click", function (e) {
     var btn = e.target.closest && e.target.closest(".term");
     if (btn) { e.preventDefault(); openPop(btn); return; }
-    if (pop && !pop.contains(e.target)) closePop();
+    if (e.target.closest && e.target.closest("[data-pop-close]")) { closePop(true); return; }
+    if (pop && !pop.hidden && !pop.contains(e.target)) closePop(false);
   });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePop(); });
-  window.addEventListener("hashchange", closePop);
-  window.addEventListener("resize", closePop);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && pop && !pop.hidden) { e.preventDefault(); closePop(true); }
+  });
+  // Tab でポップアップの外に出たら閉じる
+  document.addEventListener("focusin", function (e) {
+    if (!pop || pop.hidden) return;
+    if (!pop.contains(e.target) && e.target !== currentBtn) closePop(false);
+  });
+  window.addEventListener("hashchange", function () { closePop(false); });
+  window.addEventListener("resize", function () { closePop(false); });
 
   /* ---- 用語集ページ ---- */
   Lab.register("glossary", function (root) {
     var cats = [];
     Object.keys(TERMS).forEach(function (k) { if (cats.indexOf(TERMS[k].cat) < 0) cats.push(TERMS[k].cat); });
 
-    var html = '<div class="eyebrow">REFERENCE</div><h1>用語集</h1>' +
-      '<p class="lead">ラボの中で出てくる言葉をまとめました。本文の<span style="border-bottom:1px dotted">点線の言葉</span>をクリックしても、同じ説明が出ます。</p>';
+    var html = '<div class="eyebrow">REFERENCE</div><h1 tabindex="-1">用語集</h1>' +
+      '<p class="lead">ラボの中で出てくる言葉をまとめました。本文の点線の下線が付いた言葉を押しても、同じ説明が出ます。</p>';
 
     cats.forEach(function (c) {
       html += "<h2>" + c + '</h2><dl class="glossary">';

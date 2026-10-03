@@ -37,7 +37,7 @@
 
   function node(id) {
     var n = NODES[id];
-    return '<button type="button" class="flow-node" data-node="' + id + '" aria-pressed="false">' + n.title + (n.sub ? "<small>" + n.sub + "</small>" : "") + "</button>";
+    return '<button type="button" class="flow-node" data-node="' + id + '" aria-pressed="false" aria-controls="flow-detail">' + n.title + (n.sub ? "<small>" + n.sub + "</small>" : "") + "</button>";
   }
 
   var QUESTION = {
@@ -83,16 +83,31 @@
       '<div class="note note--warn"><span class="note__title">誤解しやすいところ</span>SRE Agent は人の代わりに全部を決めるものではありません。どこまで任せるか（提案だけか、実行までか）は人が設定します。</div>' +
 
       "<h2>全体図を見てみる</h2>" +
-      "<p>SRE Agent は、何かを<strong>きっかけ</strong>に動き出し、いろいろな<strong>つなぎ先</strong>から情報を集めて仕事をします。箱をクリックすると説明が出ます。</p>" +
+      "<p>SRE Agent は、何かを<strong>きっかけ</strong>に動き出し、いろいろな<strong>つなぎ先</strong>から情報を集めて仕事をします。箱を押すと、図の下に説明が出ます。</p>" +
       '<div class="flow-map">' +
       '<div class="flow-col"><div class="flow-col__label">きっかけ</div>' + node("in-alert") + node("in-pd") + node("in-schedule") + node("in-chat") + "</div>" +
       '<div class="flow-core"><div class="flow-core__title">SRE Agent がやること</div>' + node("do-collect") + node("do-analyze") + node("do-act") + node("do-record") + "</div>" +
       '<div class="flow-col"><div class="flow-col__label">つなぎ先</div>' + node("src-mon") + node("src-git") + node("src-res") + node("src-notify") + node("src-mcp") + "</div>" +
       "</div>" +
-      '<div class="box flow-detail" aria-live="polite" data-detail><p style="color:var(--ink-3);margin:0">上の図の箱をどれか選んでください。</p></div>' +
+      '<div class="box flow-detail" id="flow-detail" aria-live="polite" data-detail><p style="color:var(--ink-3);margin:0">上の図の箱をどれか選んでください。</p></div>' +
+
+      "<h2>実際の構成で見る</h2>" +
+      "<p>上の図を、LAB 02 で使う架空の EC サイト「contoso-shop」の構成に当てはめると、次のようになります。<strong>青い太線</strong>が SRE Agent に関わる部分です。</p>" +
+      Lab.arch({
+        highlight: ["sre", "notify", "github", "log", "alert", "app", "e-alert", "e-query", "e-action", "e-notify", "e-git"],
+        caption: "SRE Agent は本番とは別のリソースグループに作り、マネージド ID と Azure RBAC で本番のリソースグループへのアクセスを許可します。"
+      }) +
+      '<div class="table-wrap"><table class="plain"><caption class="sr-only">構成図の矢印と SRE Agent の役割の対応</caption><thead><tr><th scope="col" style="width:26%">図の矢印</th><th scope="col">SRE Agent にとっての意味</th><th scope="col" style="width:24%">上の図との対応</th></tr></thead><tbody>' +
+      "<tr><th scope=\"row\">アラート通知</th><td>Azure Monitor のアラートが届くと調査を始める</td><td>きっかけ</td></tr>" +
+      "<tr><th scope=\"row\">ログ検索</th><td>Log Analytics に KQL を投げて、メトリックやログを調べる。Application Insights のデータもここに入っている</td><td>① 情報を集める</td></tr>" +
+      "<tr><th scope=\"row\">デプロイ履歴の確認</th><td>GitHub で直前の変更とコードの差分を見る</td><td>① 情報を集める・② 原因を推測する</td></tr>" +
+      "<tr><th scope=\"row\">スワップ・再起動</th><td>App Service を操作する。Review モードでは承認されてから</td><td>③ 対処を提案・実行する</td></tr>" +
+      "<tr><th scope=\"row\">通知・記録</th><td>Teams に要約を送り、ServiceNow のチケットを更新する。修正用の GitHub Issue も作る</td><td>④ 記録・共有する</td></tr>" +
+      "</tbody></table></div>" +
+      '<div class="note"><span class="note__title">権限の与え方</span>SRE Agent は ' + T("managedid", "マネージド ID") + ' という「身分証」で Azure にアクセスします。どのリソースグループに何をしてよいかは、' + T("rbac", "Azure RBAC") + ' のロール割り当てで決めます。図の rg-contoso-prod への矢印は、この権限の範囲の中でだけ動きます。</div>' +
 
       "<h2>主な使い方は 3 つ</h2>" +
-      '<div class="table-wrap"><table class="plain"><thead><tr><th style="width:28%">使い方</th><th>どんなときに</th><th style="width:22%">このラボでは</th></tr></thead><tbody>' +
+      '<div class="table-wrap"><table class="plain"><thead><tr><th scope="col" style="width:28%">使い方</th><th scope="col">どんなときに</th><th scope="col" style="width:22%">このラボでは</th></tr></thead><tbody>' +
       "<tr><td><strong>インシデントへの自動対応</strong></td><td>アラートやチケットを受け取ったら、調査・原因の推測・対処の提案までを進める</td><td>LAB 02</td></tr>" +
       "<tr><td><strong>定期的な作業</strong></td><td>毎朝の健康チェック、週次のコスト確認など、決まった時間の作業を任せる</td><td>LAB 04</td></tr>" +
       "<tr><td><strong>質問して調べる</strong></td><td>「何が変わった？」「なぜ遅い？」と普通の言葉で聞いて、根拠つきの答えをもらう</td><td>LAB 01（この図）</td></tr>" +

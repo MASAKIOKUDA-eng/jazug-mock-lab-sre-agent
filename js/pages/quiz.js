@@ -62,7 +62,7 @@
     root.innerHTML =
       Lab.pageHead("quiz", "ここまでのラボの内容から 8 問です。間違えても何度でも選び直せます。全問正解すると修了です。") +
       QUESTIONS.map(function (q, i) { return Lab.questionHtml(q, "Q" + (i + 1) + " / " + QUESTIONS.length); }).join("") +
-      '<div data-result aria-live="polite"></div>' +
+      '<div data-result role="status"></div>' +
       Lab.pageNav("quiz");
 
     var result = root.querySelector("[data-result]");
@@ -70,15 +70,15 @@
     function showResult() {
       result.innerHTML =
         '<div class="box" style="border-color:var(--ok)">' +
-        '<span class="explain__label">結果</span>' +
+        '<h2 style="margin-top:0;font-size:1.1rem;border:0;padding:0">結果</h2>' +
         '<div class="result-score">' + firstTry + " / " + QUESTIONS.length + "</div>" +
         '<p style="color:var(--ink-2)">1 回目で正解した問題の数です。全問に正解したので、このラボは修了です。おつかれさまでした。</p>' +
         "<h3>次の一歩</h3>" +
         "<p>実際の SRE Agent を触ってみたくなったら、Microsoft Learn の公式ドキュメントから始めるのがおすすめです。</p>" +
         "<ul>" +
-        '<li><a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/overview" target="_blank" rel="noopener">Azure SRE Agent の概要</a></li>' +
-        '<li><a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/run-modes" target="_blank" rel="noopener">実行モード（Run modes）</a></li>' +
-        '<li><a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/permissions" target="_blank" rel="noopener">権限（Permissions）</a></li>' +
+        "<li>" + Lab.extLink("https://learn.microsoft.com/ja-jp/azure/sre-agent/overview", "Azure SRE Agent の概要") + "</li>" +
+        "<li>" + Lab.extLink("https://learn.microsoft.com/ja-jp/azure/sre-agent/run-modes", "実行モード（Run modes）") + "</li>" +
+        "<li>" + Lab.extLink("https://learn.microsoft.com/ja-jp/azure/sre-agent/permissions", "権限（Permissions）") + "</li>" +
         "</ul>" +
         '<p style="font-size:.88rem;color:var(--ink-3);margin:0">実際に試すときは、まず検証用のリソースグループで、Review モードから始めると安心です。</p>' +
         "</div>";
