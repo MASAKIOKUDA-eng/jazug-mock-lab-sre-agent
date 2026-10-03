@@ -46,6 +46,12 @@
       return r;
     }
 
+    function checkCount() {
+      var st = checkState(task.text);
+      return CHECKS.filter(function (c) { return st[c.id]; }).length;
+    }
+    function checkSummary() { return CHECKS.length + " 項目中 " + checkCount() + " 項目を満たしています"; }
+
     function checklistHtml() {
       var st = checkState(task.text);
       return '<ul class="checklist">' + CHECKS.map(function (c) {
@@ -54,8 +60,8 @@
       }).join("") + "</ul>";
     }
 
-    function seg(name, val, opts) {
-      return '<div class="seg" role="group">' + opts.map(function (o) {
+    function seg(name, val, opts, labelId) {
+      return '<div class="seg" role="group" aria-labelledby="' + labelId + '">' + opts.map(function (o) {
         return '<button type="button" data-seg="' + name + '" data-val="' + o[0] + '" aria-pressed="' + (val === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div>";
     }
@@ -147,12 +153,12 @@
         [["daily", "毎日 9:00"], ["weekly", "毎週月曜 9:00"], ["hourly", "1 時間ごと"]].map(function (o) {
           return '<option value="' + o[0] + '"' + (task.freq === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
         }).join("") + "</select></div>" +
-        '<div class="field"><span class="field__label" style="display:block;font-weight:700;font-size:.9rem;margin-bottom:4px">実行モード</span>' + seg("task-mode", task.mode, [["review", "Review"], ["autonomous", "Autonomous"]]) + "</div>" +
-        '<div class="field"><label for="t-text">指示文</label><textarea id="t-text" data-task="text" placeholder="SRE Agent にやってほしいことを、人に頼むときと同じように書きます。">' + esc(task.text) + "</textarea>" +
-        '<span class="hint">右のチェックがすべて付くように書いてみてください。</span></div>' +
+        '<div class="field"><span id="t-mode-label" style="display:block;font-weight:700;font-size:.9rem;margin-bottom:4px">実行モード</span>' + seg("task-mode", task.mode, [["review", "Review"], ["autonomous", "Autonomous"]], "t-mode-label") + "</div>" +
+        '<div class="field"><label for="t-text">指示文</label><textarea id="t-text" data-task="text" aria-describedby="t-text-hint" placeholder="SRE Agent にやってほしいことを、人に頼むときと同じように書きます。">' + esc(task.text) + "</textarea>" +
+        '<span class="hint" id="t-text-hint">「よい指示文のチェック」の 5 項目がすべて満たされるように書いてみてください。</span></div>' +
         '<div class="btn-row" style="margin:0"><button type="button" class="btn btn--primary" data-run-task>テスト実行</button><button type="button" class="btn" data-example>例文を入れる</button></div>' +
         "</div>" +
-        '<div class="box box--muted" style="margin:0"><h3 style="margin-top:0">よい指示文のチェック</h3><div data-checklist>' + checklistHtml() + "</div>" +
+        '<div class="box box--muted" style="margin:0"><h2 style="margin-top:0;font-size:1.05rem;border:0;padding:0">よい指示文のチェック</h2><p data-check-sum aria-live="polite" style="font-size:.88rem;margin:0 0 8px">' + checkSummary() + '</p><div data-checklist>' + checklistHtml() + "</div>" +
         '<p style="font-size:.85rem;color:var(--ink-2);margin:12px 0 0">新しく入ったメンバーに仕事を頼むつもりで書くと、うまくいきます。あいまいな指示だと、SRE Agent も人と同じように迷います。</p></div>' +
         "</div>" +
         '<div data-task-result aria-live="polite">' + taskResult + "</div>"
@@ -173,10 +179,10 @@
           return '<label><input type="checkbox" data-sev="' + s + '"' + (plan.sevs.indexOf(s) >= 0 ? " checked" : "") + "> Sev" + s + "</label>";
         }).join("") +
         '</div><span class="hint">Sev0 がいちばん深刻です（' + T("sev", "重要度とは") + "）</span></fieldset></div>" +
-        '<div class="field"><label for="p-filter">対象リソース名に含まれる文字</label><input type="text" id="p-filter" data-plan="filter" value="' + esc(plan.filter) + '"><span class="hint">空にすると、すべてのリソースが対象になります</span></div>' +
-        '<div class="field"><span style="display:block;font-weight:700;font-size:.9rem;margin-bottom:4px">実行モード</span>' + seg("plan-mode", plan.mode, [["review", "Review"], ["autonomous", "Autonomous"]]) + "</div>" +
+        '<div class="field"><label for="p-filter">対象リソース名に含まれる文字</label><input type="text" id="p-filter" data-plan="filter" aria-describedby="p-filter-hint" value="' + esc(plan.filter) + '"><span class="hint" id="p-filter-hint">空にすると、すべてのリソースが対象になります</span></div>' +
+        '<div class="field"><span id="p-mode-label" style="display:block;font-weight:700;font-size:.9rem;margin-bottom:4px">実行モード</span>' + seg("plan-mode", plan.mode, [["review", "Review"], ["autonomous", "Autonomous"]], "p-mode-label") + "</div>" +
         "</div>" +
-        '<div class="box box--muted" style="margin:0"><h3 style="margin-top:0">テストのインシデントを送る</h3>' +
+        '<div class="box box--muted" style="margin:0"><h2 style="margin-top:0;font-size:1.05rem;border:0;padding:0">テストのインシデントを送る</h2>' +
         '<div class="field"><label for="p-test">送るインシデント</label><select id="p-test" data-plan="test">' +
         TEST_INCIDENTS.map(function (t) { return '<option value="' + t.id + '"' + (plan.test === t.id ? " selected" : "") + ">Sev" + t.sev + " " + t.resource + "</option>"; }).join("") +
         "</select></div>" +
@@ -188,14 +194,24 @@
       );
     }
 
+    function tabBtn(id, label) {
+      var sel = tab === id;
+      return '<button type="button" class="tab" role="tab" id="tab-' + id + '" data-tab="' + id + '" aria-selected="' + sel + '" aria-controls="lab4-panel" tabindex="' + (sel ? "0" : "-1") + '">' + label + "</button>";
+    }
+
+    function selectTab(id) {
+      tab = id;
+      render();
+      root.querySelector("#tab-" + id).focus();
+    }
+
     function render() {
       root.innerHTML =
         Lab.pageHead("lab4", "SRE Agent に仕事を任せるときの 2 つの設定、「スケジュールタスク」と「インシデント対応プラン」を、模擬フォームで組み立ててみます。") +
-        '<div class="tabs" role="tablist">' +
-        '<button type="button" class="tab" role="tab" data-tab="task" aria-selected="' + (tab === "task") + '">スケジュールタスク</button>' +
-        '<button type="button" class="tab" role="tab" data-tab="plan" aria-selected="' + (tab === "plan") + '">インシデント対応プラン</button>' +
+        '<div class="tabs" role="tablist" aria-label="作る設定の種類">' +
+        tabBtn("task", "スケジュールタスク") + tabBtn("plan", "インシデント対応プラン") +
         "</div>" +
-        '<div role="tabpanel">' + (tab === "task" ? taskTab() : planTab()) + "</div>" +
+        '<div role="tabpanel" id="lab4-panel" aria-labelledby="tab-' + tab + '" tabindex="0">' + (tab === "task" ? taskTab() : planTab()) + "</div>" +
         Lab.completeBar("lab4", "どちらかのタブでテストを成功させると完了になります。") +
         Lab.pageNav("lab4");
     }
@@ -204,7 +220,7 @@
 
     root.addEventListener("click", function (e) {
       var el;
-      if ((el = e.target.closest("[data-tab]"))) { tab = el.getAttribute("data-tab"); render(); return; }
+      if ((el = e.target.closest("[data-tab]"))) { selectTab(el.getAttribute("data-tab")); return; }
       if ((el = e.target.closest("[data-seg]"))) {
         var name = el.getAttribute("data-seg"), val = el.getAttribute("data-val");
         if (name === "task-mode") task.mode = val; else plan.mode = val;
@@ -215,6 +231,8 @@
         task.text = EXAMPLE;
         if (!task.name) task.name = "本番環境の朝の点検";
         render();
+        root.querySelector("#t-text").focus();
+        Lab.announce("例文を入れました。" + checkSummary());
         return;
       }
       if (e.target.closest("[data-run-task]")) {
@@ -230,11 +248,29 @@
       }
     });
 
+    // タブは左右の矢印キー・Home・End で切り替える
+    root.addEventListener("keydown", function (e) {
+      if (!e.target.matches || !e.target.matches('[role="tab"]')) return;
+      var order = ["task", "plan"];
+      var i = order.indexOf(tab);
+      var next = null;
+      if (e.key === "ArrowRight") next = order[(i + 1) % order.length];
+      else if (e.key === "ArrowLeft") next = order[(i - 1 + order.length) % order.length];
+      else if (e.key === "Home") next = order[0];
+      else if (e.key === "End") next = order[order.length - 1];
+      if (next) { e.preventDefault(); selectTab(next); }
+    });
+
     root.addEventListener("input", function (e) {
       var t = e.target;
       if (t.hasAttribute("data-task")) {
         task[t.getAttribute("data-task")] = t.value;
-        if (t.getAttribute("data-task") === "text") root.querySelector("[data-checklist]").innerHTML = checklistHtml();
+        if (t.getAttribute("data-task") === "text") {
+          root.querySelector("[data-checklist]").innerHTML = checklistHtml();
+          var sumEl = root.querySelector("[data-check-sum]");
+          var sumText = checkSummary();
+          if (sumEl.textContent !== sumText) sumEl.textContent = sumText;
+        }
       } else if (t.hasAttribute("data-plan")) {
         plan[t.getAttribute("data-plan")] = t.value;
       } else if (t.hasAttribute("data-sev")) {

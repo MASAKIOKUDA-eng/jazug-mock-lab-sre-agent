@@ -39,8 +39,8 @@
     var sw = { kind: "write", mode: "review", perm: "yes" };
     var answers = {};
 
-    function seg(key, opts) {
-      return '<div class="seg" role="group">' + opts.map(function (o) {
+    function seg(key, opts, labelId) {
+      return '<div class="seg" role="group" aria-labelledby="' + labelId + '">' + opts.map(function (o) {
         return '<button type="button" data-sw="' + key + '" data-val="' + o[0] + '" aria-pressed="' + (sw[key] === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div>";
     }
@@ -58,28 +58,30 @@
     function boardHtml() {
       return (
         '<div class="switch-board">' +
-        '<div class="switch-board__row"><span class="switch-board__label">やりたいこと</span>' + seg("kind", [["read", "読み取り"], ["write", "変更"]]) + "</div>" +
-        '<div class="switch-board__row"><span class="switch-board__label">実行モード</span>' + seg("mode", [["review", "Review"], ["autonomous", "Autonomous"]]) + "</div>" +
-        '<div class="switch-board__row"><span class="switch-board__label">SRE Agent の権限</span>' + seg("perm", [["yes", "あり"], ["no", "なし"]]) + "</div>" +
+        '<div class="switch-board__row"><span class="switch-board__label" id="sw-kind">やりたいこと</span>' + seg("kind", [["read", "読み取り"], ["write", "変更"]], "sw-kind") + "</div>" +
+        '<div class="switch-board__row"><span class="switch-board__label" id="sw-mode">実行モード</span>' + seg("mode", [["review", "Review"], ["autonomous", "Autonomous"]], "sw-mode") + "</div>" +
+        '<div class="switch-board__row"><span class="switch-board__label" id="sw-perm">SRE Agent の権限</span>' + seg("perm", [["yes", "あり"], ["no", "なし"]], "sw-perm") + "</div>" +
         "</div>" +
-        '<div aria-live="polite" data-outcome>' + outcomeHtml() + "</div>"
+        '<h3 class="sr-only">結果</h3><div aria-live="polite" data-outcome>' + outcomeHtml() + "</div>"
       );
     }
 
+    function feedbackHtml(s) {
+      var a = answers[s.id];
+      if (!a) return "";
+      var ok = a === s.answer;
+      return (ok ? '<b style="color:var(--ok)">そのとおり。</b> ' : '<b style="color:var(--bad)">おすすめは ' + (s.answer === "review" ? "Review" : "Autonomous") + " です。</b> ") + s.fb;
+    }
+
     function sorterHtml() {
-      return SORT.map(function (s) {
+      return SORT.map(function (s, i) {
         var a = answers[s.id];
-        var fb = "";
-        if (a) {
-          var ok = a === s.answer;
-          fb = '<div class="sorter-row__fb">' + (ok ? '<b style="color:var(--ok)">そのとおり。</b> ' : '<b style="color:var(--bad)">おすすめは ' + (s.answer === "review" ? "Review" : "Autonomous") + " です。</b> ") + s.fb + "</div>";
-        }
         return (
-          '<div class="sorter-row" data-sort="' + s.id + '"><span>' + s.text + "</span>" +
-          '<div class="seg" role="group" aria-label="' + s.text + ' の実行モード">' +
+          '<div class="sorter-row" data-sort="' + s.id + '"><span id="sort-' + s.id + '">' + (i + 1) + ". " + s.text + "</span>" +
+          '<div class="seg" role="group" aria-labelledby="sort-' + s.id + '">' +
           '<button type="button" data-pick="review" aria-pressed="' + (a === "review") + '">Review</button>' +
           '<button type="button" data-pick="autonomous" aria-pressed="' + (a === "autonomous") + '">Autonomous</button>' +
-          "</div>" + fb + "</div>"
+          '</div><div class="sorter-row__fb" aria-live="polite">' + feedbackHtml(s) + "</div></div>"
         );
       }).join("");
     }
@@ -111,7 +113,7 @@
 
       "<h2>承認のボタンが出るのは、Azure の変更操作だけ</h2>" +
       "<p>Review モードでも、すべての行動に承認が必要になるわけではありません。</p>" +
-      '<div class="table-wrap"><table class="plain"><thead><tr><th>SRE Agent の行動</th><th>Review モードでの扱い</th></tr></thead><tbody>' +
+      '<div class="table-wrap"><table class="plain"><thead><tr><th scope="col">SRE Agent の行動</th><th scope="col">Review モードでの扱い</th></tr></thead><tbody>' +
       "<tr><td>ログやメトリックを読む</td><td>承認なしで実行</td></tr>" +
       "<tr><td>App Service の再起動、スケール変更など（Azure CLI や Azure Resource Manager の変更操作）</td><td><strong>[承認] [拒否] のボタンが出る</strong></td></tr>" +
       "<tr><td>Teams への投稿、メールの送信</td><td>ボタンは出ない。プランの指示と SRE Agent の判断で進む</td></tr>" +
@@ -135,14 +137,17 @@
       var b = e.target.closest("[data-sw]");
       if (b) {
         sw[b.getAttribute("data-sw")] = b.getAttribute("data-val");
-        root.querySelector("[data-board]").innerHTML = boardHtml();
+        b.parentNode.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+        root.querySelector("[data-outcome]").innerHTML = outcomeHtml();
         return;
       }
       var p = e.target.closest("[data-pick]");
       if (p) {
         var row = p.closest("[data-sort]");
-        answers[row.getAttribute("data-sort")] = p.getAttribute("data-pick");
-        root.querySelector("[data-sorter]").innerHTML = sorterHtml();
+        var sid = row.getAttribute("data-sort");
+        answers[sid] = p.getAttribute("data-pick");
+        p.parentNode.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === p ? "true" : "false"); });
+        row.querySelector(".sorter-row__fb").innerHTML = feedbackHtml(SORT.filter(function (s) { return s.id === sid; })[0]);
         root.querySelector("[data-sorter-status]").textContent = sorterStatus();
         if (correctCount() === SORT.length) {
           Lab.complete("lab3");

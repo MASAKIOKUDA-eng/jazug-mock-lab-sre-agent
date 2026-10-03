@@ -67,7 +67,7 @@
       body: "<p>グラフを見るときは、値の大きさよりも<strong>いつから変わり始めたか</strong>に注目します。</p><p>アラートが鳴ったのは 21:04 ですが、メモリはその 40 分以上前から増え続けています。応答時間の悪化は「症状」で、メモリの増加はその手前で起きている「変化」です。</p>",
       human: "ダッシュボードを開いて、期間を変えながらグラフを見比べます。" },
     3: { title: "ログで裏付けを取る",
-      body: "<p>SRE Agent は必要に応じて " + T("kql", "KQL") + " を自分で書いて " + T("loganalytics", "Log Analytics") + " を検索します。左のクエリは<strong>1 行ずつクリックすると意味が出ます</strong>。</p><p>コツは「以前から出ているエラー」と「新しく出始めたエラー」を分けることです。今回は OutOfMemoryException（メモリ不足）が 20:20 から急に出始めています。</p>",
+      body: "<p>SRE Agent は必要に応じて " + T("kql", "KQL") + " を自分で書いて " + T("loganalytics", "Log Analytics") + " を検索します。スレッドのクエリは<strong>1 行ずつ押すと意味が出ます</strong>。</p><p>コツは「以前から出ているエラー」と「新しく出始めたエラー」を分けることです。今回は OutOfMemoryException（メモリ不足）が 20:20 から急に出始めています。</p>",
       human: "どのテーブルを見ればいいか、クエリをどう書くかを調べながら検索します。慣れていないと時間がかかるところです。" },
     4: { title: "直前に何が変わったかを確かめる",
       body: "<p>障害の原因で多いのは「直前の変更」です。SRE Agent は GitHub や Azure DevOps につないでおくと、デプロイ履歴とコードの差分まで確認します。</p><p>ただし、時間が近いだけで決めつけることはしません。コードの中身を見て「メモリが増え続ける作りになっている」ことまで確かめています。</p>",
@@ -84,6 +84,19 @@
       human: "対応が終わったあと、記憶をたどりながら報告を書きます。夜中だと後回しになりがちです。" }
   };
 
+  /* ---------------- 各ステップで使う構成図の部分 ---------------- */
+  var HIGHLIGHT = {
+    1: ["alert", "sre", "e-rule", "e-alert"],
+    2: ["appi", "log", "sre", "e-tel", "e-ingest", "e-query"],
+    3: ["log", "sre", "e-query"],
+    4: ["github", "sre", "slot-prod", "e-git"],
+    5: ["sre"],
+    6: ["sre", "app", "slot-prod", "slot-stg", "e-action"],
+    7: ["app", "appi", "log", "sre", "e-query"],
+    8: ["sre", "notify", "github", "e-notify", "e-git"]
+  };
+  var STEP_TITLE = ["", "アラートを受け取る", "メトリックを調べる", "ログを調べる", "変更履歴を調べる", "調査をまとめる", "対処を決める", "結果を確認する", "記録する"];
+
   /* ---------------- 状態 ---------------- */
 
   var state;
@@ -92,14 +105,16 @@
   /* ---------------- 表示の部品 ---------------- */
 
   function entry(kind, time, who, body) {
-    return '<div class="entry entry--' + kind + '"><div class="entry__meta"><span class="entry__time">' + time + '</span><span class="entry__who">' + who + "</span></div>" + body + "</div>";
+    return '<div class="entry entry--' + kind + '"><h3 class="entry__meta" tabindex="-1"><span class="entry__time">' + time + '</span><span class="entry__who">' + who + "</span></h3>" + body + "</div>";
   }
 
   function chartsBefore() {
     return (
       Lab.chart({ title: "メモリ使用率（平均）", unit: "%", labels: LABELS.slice(0, NOW + 1), values: MEM_BEFORE, max: 100,
+        summary: "18:00 から 20:10 までは 45% 前後で安定。20:12 のデプロイのあと 20:20 から上がり続け、21:10 に 86%。",
         markers: [{ index: 13.2, label: "20:12 デプロイ" }, { index: 18.4, label: "21:04 アラート" }] }) +
       Lab.chart({ title: "応答時間（p95）", unit: "ミリ秒", labels: LABELS.slice(0, NOW + 1), values: RES_BEFORE, max: 5000,
+        summary: "20:40 までは 300 ミリ秒前後。20:50 から急に悪化し、21:00 に 3400 ミリ秒でアラート条件の 3 秒を超えた。",
         threshold: 3000, thresholdLabel: "アラート条件 3 秒", color: "var(--chart-2)",
         markers: [{ index: 13.2, label: "20:12 デプロイ" }] })
     );
@@ -112,10 +127,16 @@
     function solid(arr) { return arr.map(function (v, i) { return i <= CHECK ? v : null; }); }
     function dashed(arr) { return arr.map(function (v, i) { return i >= CHECK ? v : null; }); }
     var markerLabel = outcome === "deny" ? "21:09 拒否" : "21:09 対処";
+    var sum = {
+      rollback: ["対処のあと 47% に下がり、その後も 45% 前後で安定。", "対処のあと 380 ミリ秒に戻り、その後も 300 ミリ秒前後で安定。"],
+      restart: ["再起動で 40% に下がったが、そこから 10 分ごとに約 7% ずつ増え、22:30 には 82% の見込み。", "一度は 340 ミリ秒に戻るが、22:30 には 3100 ミリ秒で再びアラート条件を超える見込み。"],
+      scale: ["台数を増やして 62% に下がったが、増え続けて 22:30 には 86% の見込み。", "900 ミリ秒まで改善するが、22:30 には 3300 ミリ秒に悪化する見込み。"],
+      deny: ["対処しなかったため 98% まで上がり、高止まりしている。", "7000 ミリ秒を超え、22:00 以降は 8000 ミリ秒前後。"]
+    }[outcome];
     return (
-      Lab.chart({ title: "メモリ使用率（平均）", unit: "%", labels: LABELS, values: solid(mem), future: dashed(mem), max: 100,
+      Lab.chart({ title: "メモリ使用率（平均）", unit: "%", labels: LABELS, values: solid(mem), future: dashed(mem), max: 100, summary: sum[0] + "21:50 より後は点線の見込み。",
         markers: [{ index: 19.9, label: markerLabel }, { index: CHECK, label: "21:50 再確認" }] }) +
-      Lab.chart({ title: "応答時間（p95）", unit: "ミリ秒", labels: LABELS, values: solid(res), future: dashed(res), max: 8000,
+      Lab.chart({ title: "応答時間（p95）", unit: "ミリ秒", labels: LABELS, values: solid(res), future: dashed(res), max: 8000, summary: sum[1],
         threshold: 3000, thresholdLabel: "アラート条件 3 秒", color: "var(--chart-2)",
         markers: [{ index: 19.9, label: markerLabel }] })
     );
@@ -123,10 +144,10 @@
 
   function kqlBlock() {
     return (
-      '<div class="console" style="white-space:normal">' +
+      '<p style="font-size:.85rem;margin:0 0 4px">実行したクエリ（行を押すと意味が出ます）</p><div class="console" style="white-space:normal" role="group" aria-label="KQL クエリ">' +
       KQL.map(function (l, i) { return '<button type="button" class="kql-line" data-kql="' + i + '" aria-pressed="false">' + esc(l.code) + "</button>"; }).join("") +
       "</div>" +
-      '<div class="kql-explain" data-kql-explain aria-live="polite"><span style="color:var(--ink-3)">クエリの行をクリックすると、ここに意味が出ます。</span></div>'
+      '<div class="kql-explain" data-kql-explain aria-live="polite"><span style="color:var(--ink-3)">クエリの行を押すと、ここに意味が出ます。</span></div>'
     );
   }
 
@@ -141,9 +162,9 @@
       ["21:00", "System.Threading.Tasks.TaskCanceledException", 236, false]
     ];
     return (
-      '<div class="table-wrap" style="margin:0"><table class="mini-table"><thead><tr><th>TimeGenerated</th><th>ExceptionType</th><th style="text-align:right">Count</th></tr></thead><tbody>' +
+      '<div class="table-wrap" style="margin:0"><table class="mini-table"><caption class="sr-only">クエリの結果：時刻・例外の種類ごとの件数</caption><thead><tr><th scope="col">TimeGenerated</th><th scope="col">ExceptionType</th><th scope="col" style="text-align:right">Count</th><th scope="col">メモ</th></tr></thead><tbody>' +
       rows.map(function (r) {
-        return "<tr" + (r[3] ? ' class="hl"' : "") + "><td>" + r[0] + "</td><td>" + r[1] + '</td><td class="num">' + r[2] + "</td></tr>";
+        return "<tr" + (r[3] ? ' class="hl"' : "") + "><td>" + r[0] + "</td><td>" + r[1] + '</td><td class="num">' + r[2] + "</td><td>" + (r[3] ? "新しく発生" : "") + "</td></tr>";
       }).join("") +
       "</tbody></table></div>"
     );
@@ -199,12 +220,12 @@
       case 4:
         return [
           entry("tool", "21:06:02", "ツール実行：GitHub デプロイ履歴の取得",
-            '<div class="table-wrap" style="margin:0"><table class="mini-table"><thead><tr><th>日時</th><th>バージョン</th><th>内容</th></tr></thead><tbody>' +
-            '<tr class="hl"><td>10/03 20:12</td><td>v2.8.0</td><td>#412 商品サムネイルをメモリにキャッシュして表示を速くする</td></tr>' +
+            '<div class="table-wrap" style="margin:0"><table class="mini-table"><caption class="sr-only">デプロイ履歴</caption><thead><tr><th scope="col">日時</th><th scope="col">バージョン</th><th scope="col">内容</th></tr></thead><tbody>' +
+            '<tr class="hl"><td>10/03 20:12</td><td>v2.8.0</td><td>#412 商品サムネイルをメモリにキャッシュして表示を速くする（障害の直前）</td></tr>' +
             "<tr><td>10/02 18:30</td><td>v2.7.3</td><td>#405 注文確認メールの文面を修正</td></tr>" +
             "<tr><td>09/30 11:05</td><td>v2.7.2</td><td>#401 ライブラリの更新</td></tr>" +
             "</tbody></table></div>" +
-            '<div class="console">' + DIFF + "</div>"),
+            '<p style="font-size:.85rem;margin:8px 0 0">v2.8.0 の変更内容（行頭の + は追加された行、- は削除された行）</p><div class="console" role="group" aria-label="v2.8.0 のコードの差分" tabindex="0">' + DIFF + "</div>"),
           entry("agent", "21:06:45", AG,
             "<p>メモリの増加が始まる <strong>約 8 分前</strong>に v2.8.0 がデプロイされています。</p>" +
             "<p>この変更では、サムネイル画像を static な Dictionary にため続けていますが、<strong>件数の上限も、古いものを消す処理もありません</strong>。見られた商品の数だけメモリが増え続ける作りです。</p>")
@@ -266,7 +287,7 @@
     if (waiting) {
       approval = state.choice
         ? '<div class="approval" role="group" aria-label="承認">' +
-          '<div class="approval__title">承認が必要な操作です</div>' +
+          '<h3 class="approval__title" tabindex="-1" style="font-size:1rem;margin:0 0 4px">承認が必要な操作です</h3>' +
           '<dl class="kv"><dt>操作</dt><dd>' + ACTIONS[state.choice].op + "</dd><dt>対象</dt><dd>app-contoso-shop-prod</dd></dl>" +
           '<p style="font-size:.88rem;margin:6px 0 0">Azure リソースを変更する操作なので、Review モードでは承認を待っています。承認できるのは ' + T("sreadmin", "SRE Agent 管理者") + " だけです。このラボでは、あなたが管理者という想定です。</p>" +
           '<div class="btn-row" style="margin-bottom:0"><button type="button" class="btn btn--ok" data-decide="approve">承認する</button><button type="button" class="btn btn--bad" data-decide="deny">拒否する</button></div>' +
@@ -344,7 +365,7 @@
 
   /* ---------------- 画面の組み立て ---------------- */
 
-  var root, prevEntryCount = 0;
+  var root, prevEntryCount = 0, focusApproval = false;
 
   function explainFor(step) {
     if (step === 6) {
@@ -369,7 +390,8 @@
     if (!e) return "";
     return (
       '<span class="explain__label">いま起きていること</span>' +
-      "<h3>" + e.title + "</h3>" + e.body +
+      '<h2 style="font-size:1.08rem;margin:0 0 .6em;padding:0;border:0">' + e.title + "</h2>" + e.body +
+      '<div class="btn-row" style="margin:12px 0 0"><button type="button" class="btn btn--small" data-open-arch>構成図でこのステップを見る</button></div>' +
       (e.human ? '<div class="note" style="margin:12px 0 0;font-size:.9rem"><span class="note__title">人が手作業でやる場合</span>' + e.human + "</div>" : "")
     );
   }
@@ -411,9 +433,12 @@
       "<dt>時刻</dt><dd style=\"font-family:inherit\">土曜日の 21:04。担当者は自宅にいる</dd>" +
       "<dt>起きたこと</dt><dd style=\"font-family:inherit\">サイトの表示が遅いというアラートが鳴った</dd>" +
       "</dl></div>" +
+      "<h2>今回の構成</h2>" +
+      "<p>contoso-shop は次の構成で動いています。障害が起きているのは中央の App Service です。production スロットで v2.8.0 が動いていて、staging スロットには 1 つ前の v2.7.3 が残っています。</p>" +
+      Lab.arch({ highlight: ["app", "slot-prod", "slot-stg"], caption: "障害が起きている App Service を強調しています。シミュレーション中は「構成図でこのステップを見る」で、各ステップで使う部分を確認できます。" }) +
       "<h2>はじめに、実行モードを選ぶ</h2>" +
       "<p>この障害に対応する" + T("responseplan", "インシデント対応プラン") + "の" + T("runmode", "実行モード") + "を選んでください。迷ったら Review がおすすめです。終わったあとで、もう一方のモードも試せます。</p>" +
-      '<div class="choice-grid">' +
+      '<div class="choice-grid" role="group" aria-label="実行モードの選択">' +
       '<button type="button" class="choice" data-mode="review"><span class="choice__title">Review モード <span class="tag tag--accent">おすすめ</span></span>' +
       '<span class="choice__desc">SRE Agent が調べて対処を提案し、Azure を変更する前にあなたの承認を待ちます。本番環境向けです。</span></button>' +
       '<button type="button" class="choice" data-mode="autonomous"><span class="choice__title">Autonomous モード</span>' +
@@ -454,14 +479,14 @@
       Lab.pageHead("lab2") +
       '<div class="sim">' +
       '<section class="thread" aria-label="インシデントのスレッド">' +
-      '<div class="thread__head"><strong>INC-2048 contoso-shop の応答時間が悪化</strong><span>' + modeTag + "</span></div>" +
-      '<div class="thread__body" aria-live="polite">' + html + "</div>" +
+      '<div class="thread__head"><h2 style="font-size:.95rem;margin:0;padding:0;border:0">INC-2048 contoso-shop の応答時間が悪化</h2><span>' + modeTag + "</span></div>" +
+      '<div class="thread__body">' + html + "</div>" +
       '<div class="entry" style="background:var(--surface-2)">' + footer +
       '<div class="explain explain--inline box" style="margin:14px 0 0">' + explainHtml(state.step) + "</div>" +
       "</div>" +
       "</section>" +
       '<aside class="sim__aside">' +
-      '<div class="box"><span class="explain__label">進み具合 ' + state.step + " / 8</span>" + '<div class="step-dots">' + dots + "</div></div>" +
+      '<div class="box"><span class="explain__label">ステップ ' + state.step + " / 8：" + STEP_TITLE[state.step] + "</span>" + '<div class="step-dots" aria-hidden="true">' + dots + "</div></div>" +
       '<div class="box explain">' + explainHtml(state.step) + "</div>" +
       "</aside>" +
       "</div>" +
@@ -470,11 +495,19 @@
         : "") +
       Lab.pageNav("lab2");
 
-    // 新しく増えたエントリーが見えるようにスクロール
-    var entries = root.querySelectorAll(".thread__body .entry");
-    if (entries[firstNew] && firstNew > 0) {
-      entries[firstNew].scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    // 新しく増えたエントリーの見出しにフォーカスを移す（キーボードやスクリーンリーダーで続きから読めるように）
+    var focusTarget = null;
+    if (focusApproval) focusTarget = root.querySelector(".approval__title");
+    if (!focusTarget) {
+      var entries = root.querySelectorAll(".thread__body .entry");
+      if (entries[firstNew]) focusTarget = entries[firstNew].querySelector(".entry__meta");
     }
+    focusApproval = false;
+    if (focusTarget) {
+      focusTarget.focus({ preventScroll: true });
+      focusTarget.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    }
+    Lab.announce("ステップ " + state.step + " / 8：" + STEP_TITLE[state.step]);
   }
 
   function render() {
@@ -506,6 +539,7 @@
       if ((el = t.closest("[data-action]")) && !el.disabled) {
         state.choice = el.getAttribute("data-action");
         prevEntryCount = Math.min(prevEntryCount, countEntriesBefore(6));
+        focusApproval = true;
         render();
         return;
       }
@@ -530,6 +564,10 @@
         prevEntryCount = 0;
         render();
         window.scrollTo(0, 0);
+        return;
+      }
+      if (t.closest("[data-open-arch]")) {
+        Lab.openArch(HIGHLIGHT[state.step], "ステップ " + state.step + "：" + STEP_TITLE[state.step], "青い太線が、このステップで SRE Agent が使っている部分です。");
         return;
       }
       if ((el = t.closest(".kql-line"))) {

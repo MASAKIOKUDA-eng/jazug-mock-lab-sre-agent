@@ -46,17 +46,39 @@ npx http-server . -p 8080
 
 ブラウザで `http://localhost:8080` を開きます。
 
+## 構成図
+
+題材の EC サイト「contoso-shop」と SRE Agent の構成図を、トップページ・LAB 01・LAB 02 に入れています。LAB 02 では「構成図でこのステップを見る」で、各ステップで SRE Agent が使っている部分を強調して表示します。
+
+- 本番環境：App Service（production / staging スロット）、Azure SQL Database、Application Insights、Log Analytics、Azure Monitor アラート
+- SRE Agent：別のリソースグループに置き、マネージド ID と Azure RBAC で本番環境へのアクセスを許可
+- 外部サービス：GitHub（デプロイ・Issue）、Teams / ServiceNow（通知・チケット）
+
+## アクセシビリティ
+
+WCAG 2.2 AA を目安に作っています。
+
+- キーボードだけで全ページを操作できます（「本文へスキップ」リンク、タブの矢印キー操作、用語ポップアップの Esc）
+- 操作で内容が増えたときは、新しく出た見出しにフォーカスを移します
+- 構成図とグラフには、同じ内容を文章や表で読める代替手段があります
+- 文字色と背景色のコントラスト比は 4.5:1 以上です
+- 色だけで意味を伝えないようにしています（強調行には「新しく発生」などの文字も付けています）
+- 動きを減らす設定（prefers-reduced-motion）に対応しています
+
+確認には [axe-core](https://github.com/dequelabs/axe-core) を使い、全ページと LAB 02 のすべての分岐で違反 0 件を確認しています。
+
 ## 進み具合の保存
 
-各ラボの課題に答えると、左の目次に ✓ が付きます。進み具合はブラウザの localStorage にだけ保存され、どこにも送信されません。トップページの「進み具合をリセットする」で消せます。
+各ラボの課題に答えると、目次に完了の印が付きます。進み具合はブラウザの localStorage にだけ保存され、どこにも送信されません。トップページの「進み具合をリセットする」で消せます。
 
 ## ファイル構成
 
 ```
 index.html          ページの骨組み
-css/style.css       見た目（ライト / ダーク両対応）
+css/style.css       見た目（白基調）
 js/core.js          ページの登録、進み具合の保存、問題の部品
 js/chart.js         折れ線グラフ（SVG、ライブラリなし）
+js/arch.js          構成図（SVG）と、拡大表示のダイアログ
 js/glossary.js      用語集と、本文中の用語ポップアップ
 js/app.js           ページの切り替えと目次
 js/pages/*.js       各ページの中身

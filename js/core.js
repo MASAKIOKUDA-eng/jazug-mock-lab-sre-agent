@@ -80,7 +80,7 @@
 
     /* 用語集に載っている言葉をクリックで説明できるようにする */
     term: function (key, label) {
-      return '<button type="button" class="term" data-term="' + key + '">' + (label || key) + "</button>";
+      return '<button type="button" class="term" data-term="' + key + '" aria-haspopup="dialog" aria-expanded="false" aria-controls="term-pop">' + (label || key) + '<span class="sr-only">（用語の説明）</span></button>';
     },
 
     pageHead: function (id, lead) {
@@ -88,7 +88,7 @@
       var meta = p.minutes ? '<div class="meta-row"><span>目安 ' + p.minutes + " 分</span><span>Azure サブスクリプション不要</span></div>" : "";
       return (
         '<div class="eyebrow">LAB ' + p.no + "</div>" +
-        "<h1>" + p.title + "</h1>" +
+        "<h1 tabindex=\"-1\">" + p.title + "</h1>" +
         (lead ? '<p class="lead">' + lead + "</p>" : "") +
         meta
       );
@@ -98,7 +98,7 @@
     completeBar: function (id, text) {
       var done = Lab.isDone(id);
       return (
-        '<div class="complete-bar' + (done ? " is-done" : "") + '" data-complete-bar="' + id + '">' +
+        '<div class="complete-bar' + (done ? " is-done" : "") + '" data-complete-bar="' + id + '" role="status">' +
         (done
           ? "<strong>このラボは完了しています。</strong><span>" + (text || "") + "</span>"
           : "<span>" + (text || "下の課題に取り組むと、このラボが完了になります。") + "</span>") +
@@ -108,7 +108,25 @@
 
     refreshCompleteBar: function (root, id, text) {
       var bar = root.querySelector('[data-complete-bar="' + id + '"]');
-      if (bar) bar.outerHTML = Lab.completeBar(id, text);
+      if (!bar) return;
+      // role="status" の中身だけを入れ替えて、完了したことを読み上げる
+      var tmp = document.createElement("div");
+      tmp.innerHTML = Lab.completeBar(id, text);
+      bar.className = tmp.firstChild.className;
+      bar.innerHTML = tmp.firstChild.innerHTML;
+    },
+
+    /* スクリーンリーダー向けのお知らせ（画面には出ない） */
+    announce: function (msg) {
+      var el = document.getElementById("announcer");
+      if (!el) return;
+      el.textContent = "";
+      window.setTimeout(function () { el.textContent = msg; }, 50);
+    },
+
+    /* 外部リンク（新しいタブで開く） */
+    extLink: function (href, label) {
+      return '<a href="' + href + '" target="_blank" rel="noopener">' + label + '<span class="sr-only">（新しいタブで開きます）</span></a>';
     },
 
     /*
@@ -119,12 +137,12 @@
       return (
         '<div class="q" data-q="' + q.id + '">' +
         (label ? '<div class="q__no">' + label + "</div>" : "") +
-        '<p class="q__text">' + q.text + "</p>" +
-        '<div class="q__opts">' +
+        '<p class="q__text" id="q-' + q.id + '">' + q.text + "</p>" +
+        '<div class="q__opts" role="group" aria-labelledby="q-' + q.id + '">' +
         q.options.map(function (o, i) {
           return '<button type="button" class="q__opt" data-opt="' + i + '">' + o + "</button>";
         }).join("") +
-        '</div><div class="q__fb" hidden aria-live="polite"></div></div>'
+        '</div><div class="q__fb" role="status"></div></div>'
       );
     },
 
@@ -133,7 +151,8 @@
       questions.forEach(function (q) { byId[q.id] = q; });
       root.addEventListener("click", function (e) {
         var btn = e.target.closest(".q__opt");
-        if (!btn || btn.disabled) return;
+        // disabled にするとフォーカスが外れてしまうので、aria-disabled で止める
+        if (!btn || btn.getAttribute("aria-disabled") === "true") return;
         var box = btn.closest(".q");
         var q = byId[box.getAttribute("data-q")];
         if (!q) return;
@@ -141,15 +160,16 @@
         var fb = box.querySelector(".q__fb");
         var tries = Number(box.getAttribute("data-tries") || 0) + 1;
         box.setAttribute("data-tries", tries);
-        fb.hidden = false;
         if (i === q.answer) {
           btn.classList.add("is-correct");
-          box.querySelectorAll(".q__opt").forEach(function (b) { b.disabled = true; });
+          btn.insertAdjacentHTML("beforeend", '<span class="sr-only">（正解）</span>');
+          box.querySelectorAll(".q__opt").forEach(function (b) { b.setAttribute("aria-disabled", "true"); });
           fb.innerHTML = '<b class="ok">正解です。</b> ' + (q.explain || "");
           if (onAnswer) onAnswer(q.id, tries === 1);
         } else {
           btn.classList.add("is-wrong");
-          btn.disabled = true;
+          btn.setAttribute("aria-disabled", "true");
+          btn.insertAdjacentHTML("beforeend", '<span class="sr-only">（不正解）</span>');
           fb.innerHTML = '<b class="ng">ちがいます。</b> ' + ((q.hints && q.hints[i]) || "ほかの選択肢も考えてみてください。");
         }
       });
@@ -163,8 +183,8 @@
       if (next && next.group === "ref") next = null;
       return (
         '<nav class="page-nav" aria-label="前後のページ">' +
-        (prev ? '<a class="btn" href="#' + prev.path + '"><span><span class="page-nav__dir">前へ</span>' + prev.title + "</span></a>" : "<span></span>") +
-        (next ? '<a class="btn btn--primary" href="#' + next.path + '"><span><span class="page-nav__dir" style="color:inherit;opacity:.8">次へ</span>' + next.title + "</span></a>" : "") +
+        (prev ? '<a class="btn" href="#' + prev.path + '"><span><span class="page-nav__dir">前へ<span class="sr-only">：</span></span>' + prev.title + "</span></a>" : "<span></span>") +
+        (next ? '<a class="btn btn--primary" href="#' + next.path + '"><span><span class="page-nav__dir" style="color:inherit">次へ<span class="sr-only">：</span></span>' + next.title + "</span></a>" : "") +
         "</nav>"
       );
     }
