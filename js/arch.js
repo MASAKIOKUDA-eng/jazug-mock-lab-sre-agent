@@ -6,32 +6,36 @@
   "use strict";
   var Lab = window.Lab;
 
+  // Microsoft 公式の Azure アーキテクチャアイコン（assets/azure-icons/README.md を参照）
+  // 利用条件に従い、縦横比は変えずに 18px 単位の正方形で表示しています。
+  var ICON_DIR = "assets/azure-icons/";
+
   var ZONES = [
-    { x: 200, y: 22, w: 420, h: 516, label: "リソースグループ rg-contoso-prod（本番の EC サイト）" },
-    { x: 656, y: 186, w: 288, h: 236, label: "リソースグループ rg-sre-agent" }
+    { x: 200, y: 22, w: 420, h: 516, label: "リソースグループ rg-contoso-prod（本番の EC サイト）", icon: "resource-groups" },
+    { x: 656, y: 186, w: 288, h: 236, label: "リソースグループ rg-sre-agent", icon: "resource-groups" }
   ];
 
   var NODES = [
-    { id: "users", x: 20, y: 110, w: 150, h: 60, kind: "インターネット", title: "利用者", sub: "ブラウザから閲覧",
+    { id: "users", x: 20, y: 110, w: 150, h: 70, kind: "インターネット", icon: "users", title: "利用者", sub: "ブラウザから閲覧",
       text: "利用者はブラウザから HTTPS で EC サイトにアクセスします。" },
-    { id: "github", x: 20, y: 420, w: 150, h: 74, kind: "外部サービス", title: "GitHub", sub: "contoso/shop",
+    { id: "github", x: 20, y: 420, w: 150, h: 84, kind: "外部サービス", title: "GitHub", sub: "contoso/shop",
       sub2: "Actions でデプロイ",
       text: "アプリのソースコードを管理し、GitHub Actions で App Service の staging スロットにデプロイします。" },
-    { id: "app", x: 230, y: 62, w: 360, h: 150, kind: "App Service", title: "app-contoso-shop-prod", sub: "",
+    { id: "app", x: 230, y: 62, w: 360, h: 150, kind: "App Service", icon: "app-services", title: "app-contoso-shop-prod", sub: "",
       text: "EC サイト本体。App Service プラン plan-contoso-prod の上で 2 台のインスタンスで動いています。" },
-    { id: "slot-prod", x: 250, y: 118, w: 150, h: 76, kind: "デプロイスロット", title: "production", sub: "v2.8.0（公開中）",
+    { id: "slot-prod", x: 250, y: 118, w: 150, h: 72, kind: "デプロイスロット", icon: "web-slots", title: "production", sub: "v2.8.0（公開中）",
       text: "利用者に公開されているスロット。20:12 に v2.8.0 に切り替わりました。", inner: true },
-    { id: "slot-stg", x: 420, y: 118, w: 150, h: 76, kind: "デプロイスロット", title: "staging", sub: "v2.7.3（1 つ前）",
+    { id: "slot-stg", x: 420, y: 118, w: 150, h: 72, kind: "デプロイスロット", icon: "web-slots", title: "staging", sub: "v2.7.3（1 つ前）",
       text: "入れ替え用のスロット。スワップで production と入れ替えると、1 つ前の v2.7.3 に戻せます。", inner: true },
-    { id: "sql", x: 230, y: 250, w: 160, h: 62, kind: "Azure SQL Database", title: "sql-contoso-prod", sub: "商品・注文データ",
+    { id: "sql", x: 230, y: 250, w: 160, h: 70, kind: "Azure SQL Database", icon: "sql-database", title: "sql-contoso-prod", sub: "商品・注文データ",
       text: "商品や注文のデータを保存するデータベースです。" },
-    { id: "appi", x: 430, y: 250, w: 160, h: 62, kind: "Application Insights", title: "appi-contoso-shop", sub: "応答時間・例外",
+    { id: "appi", x: 430, y: 250, w: 160, h: 70, kind: "Application Insights", icon: "application-insights", title: "appi-contoso-shop", sub: "応答時間・例外",
       text: "アプリの応答時間や例外（エラー）、メモリなどのテレメトリを集めます。" },
-    { id: "log", x: 430, y: 350, w: 160, h: 62, kind: "Log Analytics", title: "log-contoso-prod", sub: "ログの保存・検索",
+    { id: "log", x: 430, y: 350, w: 160, h: 70, kind: "Log Analytics", icon: "log-analytics-workspaces", title: "log-contoso-prod", sub: "ログの保存・検索",
       text: "Application Insights のデータを含むログをためておくワークスペース。KQL で検索できます。" },
-    { id: "alert", x: 430, y: 450, w: 160, h: 62, kind: "Azure Monitor", title: "アラートルール", sub: "p95 応答時間 > 3 秒",
+    { id: "alert", x: 430, y: 450, w: 160, h: 70, kind: "Azure Monitor", icon: "alerts", title: "アラートルール", sub: "p95 応答時間 > 3 秒",
       text: "応答時間が 3 秒を超えたら Sev2 のアラートを出すルールです。" },
-    { id: "sre", x: 680, y: 222, w: 240, h: 176, kind: "Azure SRE Agent", title: "sre-contoso", sub: "マネージド ID + Azure RBAC",
+    { id: "sre", x: 680, y: 222, w: 240, h: 176, kind: "Azure SRE Agent", title: "sre-contoso", sub: "マネージド ID + Azure RBAC", subIcon: "managed-identities",
       sub2: "インシデント対応プラン", sub3: "スケジュールタスク",
       text: "SRE Agent 本体。マネージド ID で Azure にアクセスし、Azure RBAC で rg-contoso-prod への権限を与えています。" },
     { id: "notify", x: 680, y: 58, w: 240, h: 72, kind: "外部サービス", title: "Teams / ServiceNow", sub: "通知・インシデントチケット",
@@ -43,13 +47,13 @@
     { id: "e-deploy", from: "github", to: "app", d: "M95,420 L95,190 L228,190", label: "デプロイ", lx: 200, ly: 184 },
     { id: "e-sql", from: "app", to: "sql", d: "M310,212 L310,248", label: "", lx: 0, ly: 0 },
     { id: "e-tel", from: "app", to: "appi", d: "M510,212 L510,248", label: "テレメトリ", lx: 518, ly: 235, anchor: "start" },
-    { id: "e-ingest", from: "appi", to: "log", d: "M510,312 L510,348", label: "ログを保存", lx: 518, ly: 335, anchor: "start" },
-    { id: "e-rule", from: "log", to: "alert", d: "M510,412 L510,448", label: "ルールで監視", lx: 518, ly: 435, anchor: "start" },
-    { id: "e-alert", from: "alert", to: "sre", d: "M590,481 L740,481 L740,400", label: "アラート通知", lx: 664, ly: 470 },
+    { id: "e-ingest", from: "appi", to: "log", d: "M510,320 L510,348", label: "ログを保存", lx: 518, ly: 339, anchor: "start" },
+    { id: "e-rule", from: "log", to: "alert", d: "M510,420 L510,448", label: "ルールで監視", lx: 518, ly: 439, anchor: "start" },
+    { id: "e-alert", from: "alert", to: "sre", d: "M590,485 L740,485 L740,400", label: "アラート通知", lx: 664, ly: 474 },
     { id: "e-query", from: "sre", to: "log", d: "M680,381 L592,381", label: "ログ検索", lx: 636, ly: 370 },
     { id: "e-action", from: "sre", to: "app", d: "M722,222 L722,160 L592,160", label: "スワップ・再起動", lx: 656, ly: 149 },
     { id: "e-notify", from: "sre", to: "notify", d: "M860,222 L860,132", label: "通知・記録", lx: 868, ly: 182, anchor: "start" },
-    { id: "e-git", from: "sre", to: "github", d: "M860,398 L860,562 L95,562 L95,496", label: "デプロイ履歴の確認・Issue の作成", lx: 478, ly: 562 }
+    { id: "e-git", from: "sre", to: "github", d: "M860,398 L860,562 L95,562 L95,506", label: "デプロイ履歴の確認・Issue の作成", lx: 478, ly: 562 }
   ];
 
   var EDGE_TEXT = {
@@ -75,19 +79,41 @@
     return w;
   }
 
+  function icon(name, x, y, size) {
+    // 装飾として扱い、意味は隣の文字で伝える
+    return '<image class="a-icon" href="' + ICON_DIR + name + '.svg" x="' + x + '" y="' + y + '" width="' + size + '" height="' + size + '" aria-hidden="true"/>';
+  }
+
+  // アイコン付きの 1 行を、箱の中央にそろえて置く
+  function iconLine(name, text, cls, cx, baseline, fontPx, size) {
+    var tw = textWidth(text) * (fontPx / 12);
+    var total = size + 5 + tw;
+    var left = cx - total / 2;
+    return icon(name, left, baseline - size + (size - fontPx) / 2 + 2, size) +
+      '<text class="' + cls + '" x="' + (left + size + 5) + '" y="' + baseline + '">' + text + "</text>";
+  }
+
   function nodeSvg(n, on) {
     var cx = n.x + n.w / 2;
     var s = '<g class="a-node' + (on ? " is-on" : "") + '">';
     s += '<rect x="' + n.x + '" y="' + n.y + '" width="' + n.w + '" height="' + n.h + '" rx="6"/>';
     if (n.id === "app") {
-      s += '<text class="a-kind" x="' + (n.x + 12) + '" y="' + (n.y + 20) + '">App Service（plan-contoso-prod / 2 インスタンス）</text>';
-      s += '<text class="a-title" x="' + (n.x + 12) + '" y="' + (n.y + 40) + '">' + n.title + "</text>";
+      s += icon(n.icon, n.x + 12, n.y + 8, 22);
+      s += '<text class="a-kind" x="' + (n.x + 40) + '" y="' + (n.y + 23) + '">App Service（plan-contoso-prod / 2 インスタンス）</text>';
+      s += '<text class="a-title" x="' + (n.x + 12) + '" y="' + (n.y + 47) + '">' + n.title + "</text>";
     } else {
-      s += '<text class="a-kind" x="' + cx + '" y="' + (n.y + 18) + '" text-anchor="middle">' + n.kind + "</text>";
-      s += '<text class="a-title" x="' + cx + '" y="' + (n.y + 37) + '" text-anchor="middle">' + n.title + "</text>";
-      if (n.sub) s += '<text class="a-sub" x="' + cx + '" y="' + (n.y + 54) + '" text-anchor="middle">' + n.sub + "</text>";
-      if (n.sub2) s += '<text class="a-sub" x="' + cx + '" y="' + (n.y + 70) + '" text-anchor="middle">' + n.sub2 + "</text>";
-      if (n.sub3) s += '<text class="a-sub" x="' + cx + '" y="' + (n.y + 86) + '" text-anchor="middle">' + n.sub3 + "</text>";
+      s += n.icon
+        ? iconLine(n.icon, n.kind, "a-kind", cx, n.y + 22, 11, 20)
+        : '<text class="a-kind" x="' + cx + '" y="' + (n.y + 22) + '" text-anchor="middle">' + n.kind + "</text>";
+      s += '<text class="a-title" x="' + cx + '" y="' + (n.y + 43) + '" text-anchor="middle">' + n.title + "</text>";
+      if (n.sub) {
+        s += n.subIcon
+          ? iconLine(n.subIcon, n.sub, "a-sub", cx, n.y + 64, 12, 18)
+          : '<text class="a-sub" x="' + cx + '" y="' + (n.y + 60) + '" text-anchor="middle">' + n.sub + "</text>";
+      }
+      var off = n.subIcon ? 84 : 76;
+      if (n.sub2) s += '<text class="a-sub" x="' + cx + '" y="' + (n.y + off) + '" text-anchor="middle">' + n.sub2 + "</text>";
+      if (n.sub3) s += '<text class="a-sub" x="' + cx + '" y="' + (n.y + off + 16) + '" text-anchor="middle">' + n.sub3 + "</text>";
     }
     return s + "</g>";
   }
@@ -126,7 +152,8 @@
 
     ZONES.forEach(function (z) {
       svg += '<rect class="a-zone" x="' + z.x + '" y="' + z.y + '" width="' + z.w + '" height="' + z.h + '" rx="8"/>';
-      svg += '<text class="a-zone-label" x="' + (z.x + 12) + '" y="' + (z.y + 20) + '">' + z.label + "</text>";
+      svg += icon(z.icon, z.x + 10, z.y + 6, 18);
+      svg += '<text class="a-zone-label" x="' + (z.x + 34) + '" y="' + (z.y + 20) + '">' + z.label + "</text>";
     });
     NODES.forEach(function (n) { if (!n.inner) svg += nodeSvg(n, on(n.id)); });
     NODES.forEach(function (n) { if (n.inner) svg += nodeSvg(n, on(n.id)); });
@@ -148,6 +175,7 @@
       '<div class="arch__scroll" tabindex="0" role="group" aria-label="構成図（横にスクロールできます）">' + svg + "</div>" +
       (focus ? '<ul class="arch-legend"><li><svg width="26" height="10" aria-hidden="true"><line x1="0" y1="5" x2="26" y2="5" stroke="#0b5cad" stroke-width="3"/></svg> 青い太線：このステップで使う部分</li><li>灰色の箱・点線の矢印：今回は使わない部分</li></ul>' : "") +
       (opts.caption ? "<figcaption>" + opts.caption + "</figcaption>" : "") +
+      '<p class="arch-credit">アイコンは Microsoft 公式の Azure アーキテクチャアイコンです。公式のアイコンセットに SRE Agent 単体のアイコンはないため、SRE Agent は文字で表しています。</p>' +
       '<details class="data-alt"><summary>図の内容を文章で読む</summary>' + list + "</details>" +
       "</figure>"
     );

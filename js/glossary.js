@@ -137,6 +137,6 @@
       html += "</dl>";
     });
 
-    root.innerHTML = html;
+    root.innerHTML = html + Lab.feedback("glossary");
   });
 })();

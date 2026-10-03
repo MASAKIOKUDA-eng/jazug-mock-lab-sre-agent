@@ -4,6 +4,9 @@
 
   var STORAGE_KEY = "sre-agent-mock-lab:v1";
 
+  // ソースコードとフィードバックの送り先
+  var REPO_URL = "https://github.com/MASAKIOKUDA-eng/jazug-mock-lab-sre-agent";
+
   // 目次に並べる順番。ここを書き換えるとサイドバーとトップページの一覧が変わります。
   var PAGES = [
     { id: "home", path: "/", no: "", title: "はじめに", group: "start" },
@@ -40,6 +43,21 @@
 
   var Lab = {
     PAGES: PAGES,
+    REPO_URL: REPO_URL,
+    ISSUES_URL: REPO_URL + "/issues",
+
+    /* ページ名を入れた状態で Issue の作成画面を開く URL */
+    newIssueUrl: function (id) {
+      var p = id ? Lab.page(id) : null;
+      var where = p ? (p.no ? "LAB " + p.no + " " : "") + p.title : "";
+      var title = where ? "[" + where + "] " : "";
+      var body =
+        "## どのページですか\n" + (where || "（ページ名）") + "\n\n" +
+        "## 起きたこと・気になったこと\n\n\n" +
+        "## 期待していたこと\n\n\n" +
+        "## 使っている環境（わかる範囲で）\n- ブラウザ：\n- 画面の幅（PC / スマホ）：\n";
+      return REPO_URL + "/issues/new?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
+    },
     renderers: {},
 
     register: function (id, fn) { Lab.renderers[id] = fn; },
@@ -175,6 +193,25 @@
       });
     },
 
+    /* ページ下部のフィードバック欄 */
+    feedback: function (id) {
+      return (
+        '<aside class="feedback" aria-labelledby="feedback-' + id + '">' +
+        '<h2 class="feedback__title" id="feedback-' + id + '">このページについて</h2>' +
+        "<p>説明がわかりにくい、うまく動かない、などがあれば GitHub の Issue で教えてください。GitHub のアカウントが必要です。</p>" +
+        '<div class="btn-row" style="margin:0">' +
+        Lab.extButton(Lab.newIssueUrl(id), "このページの不具合・要望を Issue で送る", "btn btn--small") +
+        Lab.extButton(Lab.ISSUES_URL, "Issue の一覧を見る", "btn btn--small") +
+        "</div></aside>"
+      );
+    },
+
+    extButton: function (href, label, cls) {
+      return '<a class="' + (cls || "btn") + '" href="' + href + '" target="_blank" rel="noopener">' + label +
+        '<svg class="ext-mark" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M7 1h4v4M11 1 5.5 6.5M9.5 7.5V11H1V2.5h3.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>' +
+        '<span class="sr-only">（新しいタブで開きます）</span></a>';
+    },
+
     pageNav: function (id) {
       var idx = -1;
       for (var i = 0; i < PAGES.length; i++) if (PAGES[i].id === id) idx = i;
@@ -182,6 +219,7 @@
       var next = idx >= 0 && idx < PAGES.length - 1 ? PAGES[idx + 1] : null;
       if (next && next.group === "ref") next = null;
       return (
+        Lab.feedback(id) +
         '<nav class="page-nav" aria-label="前後のページ">' +
         (prev ? '<a class="btn" href="#' + prev.path + '"><span><span class="page-nav__dir">前へ<span class="sr-only">：</span></span>' + prev.title + "</span></a>" : "<span></span>") +
         (next ? '<a class="btn btn--primary" href="#' + next.path + '"><span><span class="page-nav__dir" style="color:inherit">次へ<span class="sr-only">：</span></span>' + next.title + "</span></a>" : "") +

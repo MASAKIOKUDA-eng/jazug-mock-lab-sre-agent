@@ -21,7 +21,15 @@
           <span class="brand__sub">JAZUG LT 補助教材</span>
         </span>
       </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="side-nav">目次</button>
+      <div class="header-actions">
+        <a class="btn btn--small header-link" href="https://github.com/MASAKIOKUDA-eng/jazug-mock-lab-sre-agent" target="_blank" rel="noopener">
+          <span>GitHub</span><span class="sr-only">（リポジトリを新しいタブで開きます）</span>
+        </a>
+        <a class="btn btn--small header-link" href="https://github.com/MASAKIOKUDA-eng/jazug-mock-lab-sre-agent/issues" target="_blank" rel="noopener">
+          <span>Issue</span><span class="sr-only">（不具合・要望の一覧を新しいタブで開きます）</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="side-nav">目次</button>
+      </div>
     </div>
   </header>
 
@@ -34,6 +42,10 @@
   <div class="sr-only" id="announcer" role="status" aria-live="polite"></div>
 
   <footer class="site-footer">
+    <p class="site-footer__links">
+      <a href="https://github.com/MASAKIOKUDA-eng/jazug-mock-lab-sre-agent" target="_blank" rel="noopener">ソースコード（GitHub）<span class="sr-only">（新しいタブで開きます）</span></a>
+      <a href="https://github.com/MASAKIOKUDA-eng/jazug-mock-lab-sre-agent/issues/new" target="_blank" rel="noopener">不具合・要望を送る（Issue）<span class="sr-only">（新しいタブで開きます）</span></a>
+    </p>
     <p>このラボは学習用の模擬環境です。画面・データはすべて架空のもので、実際の Azure ポータルとは異なります。</p>
     <p>仕様の説明は Microsoft Learn「Azure SRE Agent」ドキュメント（2026年8月時点）をもとにしています。最新情報は<a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/overview" target="_blank" rel="noopener">公式ドキュメント<span class="sr-only">（新しいタブで開きます）</span></a>で確認してください。</p>
   </footer>

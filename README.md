@@ -54,6 +54,8 @@ npx http-server . -p 8080
 - SRE Agent：別のリソースグループに置き、マネージド ID と Azure RBAC で本番環境へのアクセスを許可
 - 外部サービス：GitHub（デプロイ・Issue）、Teams / ServiceNow（通知・チケット）
 
+図のアイコンは、Microsoft 公式の [Azure アーキテクチャアイコン](https://learn.microsoft.com/azure/architecture/icons/)（2026 年 7 月版）です。使っている分だけを `assets/azure-icons/` に入れています。入手元・利用条件・元のファイル名は [assets/azure-icons/README.md](assets/azure-icons/README.md) にまとめました。公式のアイコンセットに SRE Agent 単体のアイコンはないため、SRE Agent は文字で表しています。
+
 ## アクセシビリティ
 
 WCAG 2.2 AA を目安に作っています。
@@ -67,6 +69,10 @@ WCAG 2.2 AA を目安に作っています。
 
 確認には [axe-core](https://github.com/dequelabs/axe-core) を使い、全ページと LAB 02 のすべての分岐で違反 0 件を確認しています。
 
+## フィードバック
+
+画面上部の「GitHub」「Issue」ボタンと、各ページの下にある「このページの不具合・要望を Issue で送る」から、このリポジトリの Issue を開けます。ページ名とテンプレートが入った状態で Issue の作成画面が開きます（GitHub のアカウントが必要です）。
+
 ## 進み具合の保存
 
 各ラボの課題に答えると、目次に完了の印が付きます。進み具合はブラウザの localStorage にだけ保存され、どこにも送信されません。トップページの「進み具合をリセットする」で消せます。
@@ -75,6 +81,7 @@ WCAG 2.2 AA を目安に作っています。
 
 ```
 index.html          ページの骨組み
+assets/azure-icons/ 構成図で使う Azure 公式アイコン
 css/style.css       見た目（白基調）
 js/core.js          ページの登録、進み具合の保存、問題の部品
 js/chart.js         折れ線グラフ（SVG、ライブラリなし）
