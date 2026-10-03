@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SRE Agent モックラボ</title>
+  <meta name="description" content="Azure SRE Agent の動きを、ブラウザだけで体験しながら学べる初学者向けの模擬ラボです。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="#/">
+        <span class="brand__mark" aria-hidden="true">SRE</span>
+        <span class="brand__text">
+          <span class="brand__title">SRE Agent モックラボ</span>
+          <span class="brand__sub">JAZUG LT 補助教材</span>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="side-nav">目次</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="side-nav" id="side-nav" aria-label="ラボの目次"></nav>
+    <main class="main" id="main" tabindex="-1"></main>
+  </div>
+
+  <div class="term-pop" id="term-pop" role="dialog" aria-modal="false" hidden></div>
+
+  <footer class="site-footer">
+    <p>このラボは学習用の模擬環境です。画面・データはすべて架空のもので、実際の Azure ポータルとは異なります。</p>
+    <p>仕様の説明は Microsoft Learn「Azure SRE Agent」ドキュメント（2026年8月時点）をもとにしています。最新情報は<a href="https://learn.microsoft.com/ja-jp/azure/sre-agent/overview" target="_blank" rel="noopener">公式ドキュメント</a>で確認してください。</p>
+  </footer>
+
+  <script src="js/core.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/glossary.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/lab1.js"></script>
+  <script src="js/pages/lab2.js"></script>
+  <script src="js/pages/lab3.js"></script>
+  <script src="js/pages/lab4.js"></script>
+  <script src="js/pages/lab5.js"></script>
+  <script src="js/pages/quiz.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
