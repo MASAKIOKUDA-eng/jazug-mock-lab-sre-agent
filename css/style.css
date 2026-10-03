@@ -110,6 +110,33 @@ small { color: var(--ink-3); }
 .brand__title { font-weight: 700; }
 .brand__sub { font-size: .75rem; color: var(--ink-3); }
 
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.header-link { min-height: 32px; }
+.ext-mark { flex: none; margin-left: 2px; }
+@media (max-width: 420px) {
+  .site-header__inner { gap: 4px; }
+  .header-actions { gap: 3px; }
+  .header-link, .nav-toggle { padding: 4px 6px; font-size: .78rem; min-height: 32px; }
+  .brand__sub { display: none; }
+  .brand__mark { display: none; }
+  .brand__title { font-size: .8rem; white-space: nowrap; }
+}
+.nav-toggle { white-space: nowrap; }
+
+.feedback {
+  margin-top: 40px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.feedback__title { font-size: 1rem; margin: 0 0 4px; padding: 0; border: 0; }
+.feedback p { font-size: .9rem; color: var(--ink-2); margin: 0 0 10px; }
+.feedback + .page-nav { margin-top: 24px; }
+
+.site-footer__links { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 10px !important; font-size: .88rem; }
+.arch-credit { font-size: .78rem; color: var(--ink-3); margin: 4px 0 0; }
+
 .nav-toggle {
   display: none;
   font: inherit;
@@ -647,7 +674,8 @@ details.data-alt .table-wrap { max-height: 240px; overflow: auto; }
 /* ---------- 構成図 ---------- */
 .arch { margin: 0 0 20px; }
 .arch__scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 8px; }
-.arch svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.arch__scroll > svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.arch-legend svg { display: inline-block; vertical-align: middle; }
 .arch figcaption { font-size: .85rem; color: var(--ink-2); margin-top: 6px; }
 .arch text { font-family: var(--font); fill: var(--ink); }
 .arch .a-zone { fill: #f7f9fb; stroke: var(--line-strong); stroke-dasharray: 6 4; }

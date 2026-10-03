@@ -64,7 +64,15 @@
 
       '<h2>進み具合のリセット</h2>' +
       '<p>進み具合はこのブラウザの中だけに保存されています。最初からやり直したいときはリセットしてください。</p>' +
-      '<div class="btn-row"><button type="button" class="btn btn--small btn--bad" data-reset>進み具合をリセットする</button></div>';
+      '<div class="btn-row"><button type="button" class="btn btn--small btn--bad" data-reset>進み具合をリセットする</button></div>' +
+
+      "<h2>ソースコードとフィードバック</h2>" +
+      "<p>このラボのソースコードは GitHub で公開しています。説明の誤りや動かないところに気づいたら、Issue で教えてもらえると助かります。</p>" +
+      '<div class="btn-row">' +
+      Lab.extButton(Lab.REPO_URL, "GitHub でソースコードを見る", "btn") +
+      Lab.extButton(Lab.newIssueUrl(), "Issue で不具合・要望を送る", "btn") +
+      Lab.extButton(Lab.ISSUES_URL, "Issue の一覧を見る", "btn") +
+      "</div>";
 
     root.querySelector("[data-reset]").addEventListener("click", function () {
       if (window.confirm("進み具合をすべて消して、最初からやり直しますか？")) {
